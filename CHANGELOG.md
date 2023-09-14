@@ -6,6 +6,12 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### [1.4.10](https://github.com/aws-actions/amazon-ecs-deploy-task-definition/compare/v1.4.9...v1.4.10) (2022-09-30)
 
+### Fork
+
+#### Support registered task definition ARNs
+
+- Support accepting already registered task definitions. These are detected by
+  the `task-definition` input starting with `arn:`.
 
 ### Bug Fixes
 
