@@ -5,7 +5,7 @@ branding:
   color: 'orange'
 inputs:
   task-definition:
-    description: 'The path to the ECS task definition file to register'
+    description: 'The ARN of an existing task def, or path to ECS task definition file to register'
     required: true
   service:
     description: 'The name of the ECS service to deploy to. The action will only register the task definition if no service is given.'

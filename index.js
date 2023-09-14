@@ -257,7 +257,7 @@ async function run() {
     });
 
     // Get inputs
-    const taskDefinitionFile = core.getInput('task-definition', { required: true });
+    const taskDefinitionInput = core.getInput('task-definition', { required: true });
     const service = core.getInput('service', { required: false });
     const cluster = core.getInput('cluster', { required: false });
     const waitForService = core.getInput('wait-for-service-stability', { required: false });
@@ -269,23 +269,29 @@ async function run() {
     const forceNewDeployInput = core.getInput('force-new-deployment', { required: false }) || 'false';
     const forceNewDeployment = forceNewDeployInput.toLowerCase() === 'true';
 
-    // Register the task definition
-    core.debug('Registering the task definition');
-    const taskDefPath = path.isAbsolute(taskDefinitionFile) ?
-      taskDefinitionFile :
-      path.join(process.env.GITHUB_WORKSPACE, taskDefinitionFile);
-    const fileContents = fs.readFileSync(taskDefPath, 'utf8');
-    const taskDefContents = maintainValidObjects(removeIgnoredAttributes(cleanNullKeys(yaml.parse(fileContents))));
-    let registerResponse;
-    try {
-      registerResponse = await ecs.registerTaskDefinition(taskDefContents).promise();
-    } catch (error) {
-      core.setFailed("Failed to register task definition in ECS: " + error.message);
-      core.debug("Task definition contents:");
-      core.debug(JSON.stringify(taskDefContents, undefined, 4));
-      throw(error);
+    let taskDefArn
+    if (taskDefinitionInput.startsWith('arn:')) {
+      taskDefArn = taskDefinitionInput;
+    } else {
+      // Register the task definition
+      core.debug('Registering the task definition');
+      const taskDefPath = path.isAbsolute(taskDefinitionInput) ?
+        taskDefinitionInput :
+        path.join(process.env.GITHUB_WORKSPACE, taskDefinitionInput);
+      const fileContents = fs.readFileSync(taskDefPath, 'utf8');
+      const taskDefContents = maintainValidObjects(removeIgnoredAttributes(cleanNullKeys(yaml.parse(fileContents))));
+      let registerResponse;
+      try {
+        registerResponse = await ecs.registerTaskDefinition(taskDefContents).promise();
+      } catch (error) {
+        core.setFailed("Failed to register task definition in ECS: " + error.message);
+        core.debug("Task definition contents:");
+        core.debug(JSON.stringify(taskDefContents, undefined, 4));
+        throw(error);
+      }
+      taskDefArn = registerResponse.taskDefinition.taskDefinitionArn;
     }
-    const taskDefArn = registerResponse.taskDefinition.taskDefinitionArn;
+
     core.setOutput('task-definition-arn', taskDefArn);
 
     // Update the service with the new task definition
